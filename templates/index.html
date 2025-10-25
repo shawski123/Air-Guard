@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Air Guard</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(to bottom right, #a8edea, #fed6e3);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      color: #333;
+    }
+
+    .card {
+      background: white;
+      padding: 40px 60px;
+      border-radius: 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+      text-align: center;
+      min-width: 320px;
+    }
+
+    h1 {
+      margin-bottom: 25px;
+      font-size: 2em;
+      color: #222;
+    }
+
+    .value {
+      font-size: 1.6em;
+      margin: 12px 0;
+    }
+
+    .indicator {
+      margin-top: 20px;
+      font-weight: bold;
+      padding: 12px 20px;
+      border-radius: 10px;
+      color: white;
+      font-size: 1.2em;
+      display: inline-block;
+      transition: background 0.3s;
+      min-width: 160px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🌤 Air Guard</h1>
+
+    <div class="value">🌡️ Temperature: <span id="temp">--</span> °F</div>
+    <div class="value">💧 Humidity: <span id="hum">--</span> %</div>
+    <div class="value">🔥 Heat Index: <span id="hic">--</span> °F</div>
+    <div class="value">🌫 PM2.5: <span id="pm25">--</span> μg/m³</div>
+
+    <div id="comfort" class="indicator" style="background: #888;">Loading...</div>
+    <div id="airquality" class="indicator" style="background: #888;">Loading...</div>
+  </div>
+
+  <script>
+    async function updateData() {
+      try {
+        const res = await fetch('/data');
+        const data = await res.json();
+
+        if (data.temperature !== null) {
+          // Update sensor values
+          document.getElementById('temp').innerText = data.temperature.toFixed(1);
+          document.getElementById('hum').innerText = data.humidity.toFixed(1);
+          document.getElementById('hic').innerText = data.heat_index.toFixed(1);
+          document.getElementById('pm25').innerText = data.pm25.toFixed(1);
+
+          // Comfort indicator based on Heat Index
+          const comfortDiv = document.getElementById('comfort');
+          const hic = data.heat_index;
+          let comfortText = "";
+          let comfortColor = "";
+          if (hic < 80) {
+            comfortText = "Comfortable 😌";
+            comfortColor = "#2ecc71";
+          } else if (hic < 90) {
+            comfortText = "Warm ⚠️";
+            comfortColor = "#f1c40f";
+          } else if (hic < 105) {
+            comfortText = "Hot ☀️";
+            comfortColor = "#e67e22";
+          } else {
+            comfortText = "Dangerous 🥵";
+            comfortColor = "#e74c3c";
+          }
+          comfortDiv.textContent = comfortText;
+          comfortDiv.style.backgroundColor = comfortColor;
+
+          // Air quality indicator based on PM2.5
+          const airDiv = document.getElementById('airquality');
+          const pm25 = data.pm25;
+          let airText = "";
+          let airColor = "";
+          if (pm25 <= 12) {
+            airText = "Good ✅";
+            airColor = "#2ecc71";
+          } else if (pm25 <= 35) {
+            airText = "Moderate ⚠️";
+            airColor = "#f1c40f";
+          } else if (pm25 <= 55) {
+            airText = "Unhealthy 😷";
+            airColor = "#e67e22";
+          } else {
+            airText = "Very Unhealthy 🥵";
+            airColor = "#e74c3c";
+          }
+          airDiv.textContent = airText;
+          airDiv.style.backgroundColor = airColor;
+        }
+      } catch (err) {
+        console.error("Error fetching data:", err);
+      }
+    }
+
+    // Refresh every 2 seconds
+    setInterval(updateData, 2000);
+    updateData();
+  </script>
+</body>
+</html>
