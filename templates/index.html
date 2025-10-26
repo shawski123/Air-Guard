@@ -2,128 +2,130 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Air Guard</title>
+  <title>AirGuard</title>
   <style>
     body {
-      font-family: 'Segoe UI', Arial, sans-serif;
-      background: linear-gradient(to bottom right, #a8edea, #fed6e3);
+      font-family: "Inter", sans-serif;
+      background-color: #0e1a24;
+      color: #fff;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
       align-items: center;
-      height: 100vh;
       margin: 0;
-      color: #333;
+      padding: 0;
     }
-
-    .card {
-      background: white;
-      padding: 40px 60px;
-      border-radius: 20px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-      text-align: center;
-      min-width: 320px;
-    }
-
-    h1 {
-      margin-bottom: 25px;
-      font-size: 2em;
-      color: #222;
-    }
-
-    .value {
-      font-size: 1.6em;
-      margin: 12px 0;
-    }
-
-    .indicator {
-      margin-top: 20px;
-      font-weight: bold;
-      padding: 12px 20px;
-      border-radius: 10px;
-      color: white;
-      font-size: 1.2em;
-      display: inline-block;
-      transition: background 0.3s;
-      min-width: 160px;
-    }
+    h1 { margin-top: 20px; font-size: 2rem; }
+    .container { display: flex; flex-direction: row; justify-content: center; width: 90%; max-width: 1200px; margin-top: 20px; gap: 20px; }
+    .cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; flex: 2; }
+    .card { background: #162735; border-radius: 16px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.4); text-align: center; }
+    .value { font-size: 2rem; margin: 10px 0; }
+    .status { font-size: 1rem; font-weight: bold; }
+    .good { color: #00c853; } .moderate { color: #ffeb3b; } .unhealthy { color: #ff9800; } .very-unhealthy { color: #f44336; } .hazardous { color: #9c27b0; }
+    .chatbox { flex: 1; background: #162735; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; }
+    .chat-messages { height: 300px; overflow-y: auto; border-radius: 8px; padding: 10px; background: #1e2f3e; }
+    .message { margin: 8px 0; padding: 8px 12px; border-radius: 8px; max-width: 80%; }
+    .user { background: #2196f3; align-self: flex-end; } .ai { background: #00bfa5; align-self: flex-start; }
+    .chat-input { display: flex; margin-top: 10px; }
+    .chat-input input { flex: 1; padding: 10px; border: none; border-radius: 8px 0 0 8px; outline: none; }
+    .chat-input button { background: #2196f3; border: none; color: white; padding: 10px 20px; border-radius: 0 8px 8px 0; cursor: pointer; }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1>🌤 Air Guard</h1>
+  <h1>🌤️ AirGuard</h1>
+  <p>Real-time environment monitor + AI assistant for allergies & asthma</p>
 
-    <div class="value">🌡️ Temperature: <span id="temp">--</span> °F</div>
-    <div class="value">💧 Humidity: <span id="hum">--</span> %</div>
-    <div class="value">🔥 Heat Index: <span id="hic">--</span> °F</div>
-    <div class="value">🌫 PM2.5: <span id="pm25">--</span> μg/m³</div>
+  <div class="container">
+    <div class="cards">
+      <div class="card"><h3>Temperature (°F)</h3><div id="temperature" class="value">--</div></div>
+      <div class="card"><h3>Humidity (%)</h3><div id="humidity" class="value">--</div></div>
+      <div class="card"><h3>Heat Index (°F)</h3><div id="heat-index" class="value">--</div><div id="heat-status" class="status">--</div></div>
+      <div class="card"><h3>PM2.5 (µg/m³)</h3><div id="pm25" class="value">--</div><div id="pm-status" class="status">--</div></div>
+    </div>
 
-    <div id="comfort" class="indicator" style="background: #888;">Loading...</div>
-    <div id="airquality" class="indicator" style="background: #888;">Loading...</div>
+    <div class="chatbox">
+      <h3>🤖 AirGuard Assistant</h3>
+      <p>Automated advice on major changes — or ask anything</p>
+      <div class="chat-messages" id="chat-messages">
+        <div class="message ai">
+          Hi — I’ll alert you if conditions change and can answer questions about the air.
+        </div>
+      </div>
+      <div class="chat-input">
+        <input type="text" id="user-input" placeholder="Ask AirGuard (e.g. 'Should I open windows?')">
+        <button onclick="sendMessage()">Send</button>
+      </div>
+    </div>
   </div>
 
   <script>
-    async function updateData() {
+    async function updateReadings() {
       try {
-        const res = await fetch('/data');
+        const res = await fetch("/data");
         const data = await res.json();
 
-        if (data.temperature !== null) {
-          // Update sensor values
-          document.getElementById('temp').innerText = data.temperature.toFixed(1);
-          document.getElementById('hum').innerText = data.humidity.toFixed(1);
-          document.getElementById('hic').innerText = data.heat_index.toFixed(1);
-          document.getElementById('pm25').innerText = data.pm25.toFixed(1);
+        document.getElementById("temperature").textContent = data.temperature.toFixed(1);
+        document.getElementById("humidity").textContent = data.humidity.toFixed(1);
+        document.getElementById("heat-index").textContent = data.heat_index.toFixed(1);
+        document.getElementById("pm25").textContent = data.pm25.toFixed(1);
 
-          // Comfort indicator based on Heat Index
-          const comfortDiv = document.getElementById('comfort');
-          const hic = data.heat_index;
-          let comfortText = "";
-          let comfortColor = "";
-          if (hic < 80) {
-            comfortText = "Comfortable 😌";
-            comfortColor = "#2ecc71";
-          } else if (hic < 90) {
-            comfortText = "Warm ⚠️";
-            comfortColor = "#f1c40f";
-          } else if (hic < 105) {
-            comfortText = "Hot ☀️";
-            comfortColor = "#e67e22";
-          } else {
-            comfortText = "Dangerous 🥵";
-            comfortColor = "#e74c3c";
-          }
-          comfortDiv.textContent = comfortText;
-          comfortDiv.style.backgroundColor = comfortColor;
+        const hiStatus = getHeatIndexStatus(data.heat_index);
+        const hiEl = document.getElementById("heat-status");
+        hiEl.textContent = hiStatus.text;
+        hiEl.className = "status " + hiStatus.class;
 
-          // Air quality indicator based on PM2.5
-          const airDiv = document.getElementById('airquality');
-          const pm25 = data.pm25;
-          let airText = "";
-          let airColor = "";
-          if (pm25 <= 12) {
-            airText = "Good ✅";
-            airColor = "#2ecc71";
-          } else if (pm25 <= 35) {
-            airText = "Moderate ⚠️";
-            airColor = "#f1c40f";
-          } else if (pm25 <= 55) {
-            airText = "Unhealthy 😷";
-            airColor = "#e67e22";
-          } else {
-            airText = "Very Unhealthy 🥵";
-            airColor = "#e74c3c";
-          }
-          airDiv.textContent = airText;
-          airDiv.style.backgroundColor = airColor;
-        }
-      } catch (err) {
-        console.error("Error fetching data:", err);
-      }
+        const pmStatus = getPMStatus(data.pm25);
+        const pmEl = document.getElementById("pm-status");
+        pmEl.textContent = pmStatus.text;
+        pmEl.className = "status " + pmStatus.class;
+
+      } catch (err) { console.error("Error fetching data:", err); }
     }
 
-    // Refresh every 2 seconds
-    setInterval(updateData, 2000);
-    updateData();
+    function getHeatIndexStatus(heatIndex) {
+      if (heatIndex < 80) return { text: "Comfortable", class: "good" };
+      if (heatIndex < 90) return { text: "Caution", class: "moderate" };
+      if (heatIndex < 103) return { text: "Extreme Caution", class: "unhealthy" };
+      if (heatIndex < 125) return { text: "Danger", class: "very-unhealthy" };
+      return { text: "Extreme Danger", class: "hazardous" };
+    }
+
+    function getPMStatus(pm) {
+      if (pm <= 12) return { text: "Good", class: "good" };
+      if (pm <= 35.4) return { text: "Moderate", class: "moderate" };
+      if (pm <= 55.4) return { text: "Unhealthy for Sensitive Groups", class: "unhealthy" };
+      if (pm <= 150.4) return { text: "Unhealthy", class: "very-unhealthy" };
+      return { text: "Hazardous", class: "hazardous" };
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById("user-input");
+      const message = input.value.trim();
+      if (!message) return;
+
+      addMessage("user", message);
+      input.value = "";
+
+      const res = await fetch("/ask_ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: message })
+      });
+
+      const data = await res.json();
+      addMessage("ai", data.response);
+    }
+
+    function addMessage(sender, text) {
+      const chat = document.getElementById("chat-messages");
+      const msg = document.createElement("div");
+      msg.className = `message ${sender}`;
+      msg.textContent = text;
+      chat.appendChild(msg);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    setInterval(updateReadings, 4000);
+    updateReadings();
   </script>
 </body>
 </html>
